@@ -1,0 +1,65 @@
+version: '2.4'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./ops/api/Dockerfile
+      target: develop
+    container_name: pgproject_api
+    ports:
+      - "3000:3000"
+    environment:
+      POSTGRES_URL: "postgresql://gopher:password@postgres:5432/gopher_youtube?sslmode=disable"
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+
+  postgres:
+    image: postgres:14.0
+    container_name: pgproject_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_DB: "gopher_youtube"
+      POSTGRES_USER: "gopher"
+      POSTGRES_PORT: "5432"
+    volumes:
+      - postgres:/data/postgres
+
+  migration:
+    build:
+      context: .
+      dockerfile: ./ops/migration/Dockerfile
+    container_name: pgproject_migration
+    environment:
+      POSTGRES_URL: "postgresql://gopher:password@postgres:5432/gopher_youtube?sslmode=disable"
+    depends_on:
+      - postgres
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.28
+    container_name: pgproject_jaeger
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+
+  pgadmin:
+    image: dpage/pgadmin4:6
+    container_name: pgproject_pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "pgadmin4@pgadmin.org"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin:/root/.pgadmin
+    depends_on:
+      - postgres
+
+volumes:
+  postgres:
+  pgadmin:
